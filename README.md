@@ -17,4 +17,4 @@ I need to analyze the sales history of the company and make recommendations to i
 ## Files Included
 * SourceSystem ERD.vsd - ERD of source data from original database using which dimension data is modeled
 * Dimensional Data Model_Star Schema.vsdx - has 3 fact tables and 6 dimension tables
-* To be updated ---
+* Dimensional Data Model ERD details.docx - More information about table naming conventions and granularity of each dimension and fact table 
