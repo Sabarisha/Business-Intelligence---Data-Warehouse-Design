@@ -15,5 +15,6 @@ I need to analyze the sales history of the company and make recommendations to i
 * Tableau - To create dashboard for the company to get useful information relevant to the questions that needs to be answered
 
 ## Files Included
-* Dimensional Data Model_Star Schema - has 3 fact tables and 6 dimension tables
+* SourceSystem ERD.vsd - ERD of source data from original database using which dimension data is modeled
+* Dimensional Data Model_Star Schema.vsdx - has 3 fact tables and 6 dimension tables
 * To be updated ---
