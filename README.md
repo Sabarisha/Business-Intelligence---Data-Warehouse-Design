@@ -20,3 +20,4 @@ I need to analyze the sales history of the company and make recommendations to i
 * Dimensional Data Model ERD details.docx - More information about table naming conventions and granularity of each dimension and fact table 
 * Staging Loads.docx - an overview of how to stage loads in SSIS from source to target database
 * Dimension table creation and loading - Sample code explaining how to create and load data into a dimension table
+* Fact table creation and loading - Sample code explaining how to create and load data into a fact table
