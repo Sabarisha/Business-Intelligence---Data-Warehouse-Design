@@ -1,0 +1,46 @@
+## Creating Fact table
+
+##Code to create a fact table which is similar to other table creation
+
+CREATE TABLE sabaris3DW.dbo.FactSales
+(FactSalesKey INT IDENTITY(1,1) CONSTRAINT PK_FactSales PRIMARY KEY CLUSTERED NOT NULL,
+dimProductKey INT NOT NULL CONSTRAINT FK_FactSales_DimProduct_dimProductKey	FOREIGN KEY REFERENCES dbo.DimProduct(dimProductKey),
+dimChannelKey INT NOT NULL CONSTRAINT FK_FactSales_DimChannel_dimChannelKey FOREIGN KEY REFERENCES dbo.DimChannel(dimChannelKey),
+dimCustomerKey INT NULL CONSTRAINT FK_FactSales_DimCustomer_dimCustomerKey FOREIGN KEY REFERENCES dbo.DimCustomer(dimCustomerKey),
+dimStoreKey INT NULL CONSTRAINT FK_FactSales_DimStore_dimStoreKey FOREIGN KEY REFERENCES dbo.DimStore(dimStoreKey),
+dimResellerKey INT NULL CONSTRAINT FK_FactSales_DimReseller_dimResellerKey FOREIGN KEY REFERENCES dbo.DimReseller(dimResellerKey),
+DimDateID INT NOT NULL CONSTRAINT FK_FactSales_DimDate_DimDateID FOREIGN KEY REFERENCES dbo.DimDate(DimDateID),
+SalesDetailID INT NOT NULL,
+SalesHeaderID INT NOT NULL,
+Cost numeric(18,2) NOT NULL,  
+--Price NUMERIC(18,2) NOT NULL,   they are slowly changing so we can avoid them and use sales amount instead
+--WholeSalePrice NUMERIC(18,2) NOT NULL,
+SalesQuantity INT NOT NULL,
+SalesAmount DECIMAL(16,6) NOT NULL,
+Profit DECIMAL(16,6) NOT NULL);
+GO
+
+##To create a fact table start from table from which has most valuable data. eg: order detail/sales detail table
+## Use the natural keys in that table to connect with dimension tables to import all foreign keys into fact table
+## Fact tables dont need default values but they are connected to default values in dimension tables
+
+
+IF EXISTS (SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = 'dbo' AND TABLE_NAME = 'FactSales')
+BEGIN
+	DELETE FROM dbo.FactSales;
+END
+GO
+
+DBCC CHECKIDENT ('dbo.FactSales',RESEED, 0);
+GO
+
+INSERT INTO dbo.FactSales
+(dimProductKey,dimChannelKey,dimCustomerKey,dimStoreKey,dimResellerKey,DimDateID,SalesDetailID,SalesHeaderID,Cost,SalesQuantity,SalesAmount,Profit)
+SELECT COALESCE(dimProductKey,-1) AS dimProductKey,COALESCE(dimChannelKey,-1) AS dimChannelKey,COALESCE(dimCustomerKey,-1) AS dimCustomerKey,COALESCE(dimStoreKey,-1) AS dimStoreKey,COALESCE(dimResellerKey,-1) AS dimResellerKey,DimDateID,SalesDetailID,SalesHeaderID,Cost,SalesQuantity,SalesAmount,(SalesAmount-Cost*SalesQuantity) AS Profit
+FROM(SELECT SalesDetailID,SalesHeaderID,dimProductKey,dimChannelKey,dimResellerKey,dimCustomerKey,dimStoreKey,Date,SalesQuantity,SalesAmount,Cost
+FROM(SELECT SalesDetailID,SalesHeaderID,dimProductKey,dimChannelKey,dimResellerKey,dimCustomerKey,StoreID,Date,SalesQuantity,SalesAmount,Cost
+FROM(SELECT SalesDetailID,SalesHeaderID,dimProductKey,dimChannelKey,dimResellerKey,CustomerID,StoreID,Date,SalesQuantity,SalesAmount,Cost
+FROM(SELECT SalesDetailID,SalesHeaderID,dimProductKey,dimChannelKey,ResellerID,CustomerID,StoreID,Date,SalesQuantity,SalesAmount,Cost
+FROM(SELECT SalesDetailID,SalesHeaderID,dimProductKey,ChannelID,ResellerID,CustomerID,StoreID,Date,SalesQuantity,SalesAmount,Cost
+FROM(SELECT SalesDetailID,SalesHeaderID,tblsales.ProductID AS ProductID,ChannelID,ResellerID,CustomerID,StoreID,Date,SalesQuantity,SalesAmount,Cost
+FROM(SELECT SalesDetailID,stgsalesd.SalesHeaderID AS SalesHeaderID,ProductID,ChannelID,ResellerID,CustomerID,StoreID,Date,SalesQuantity,SalesAmount FROM StageSalesDetail AS stgsalesd LEFT JOIN StageSalesHeader AS stgsalesh ON stgsalesd.SalesHeaderID=stgsalesh.SalesHeaderID) AS tblsales LEFT JOIN StageProduct ON tblsales.ProductID=StageProduct.ProductID) AS tblsalestgprod LEFT JOIN DimProduct ON tblsalestgprod.ProductID=DimProduct.ProductID) AS tblsalesprod LEFT JOIN DimChannel ON tblsalesprod.ChannelID=DimChannel.ChannelID) AS tblprochan LEFT JOIN DimReseller ON tblprochan.ResellerID=DimReseller.ResellerID) AS tblspchanres LEFT JOIN DimCustomer ON tblspchanres.CustomerID=DimCustomer.CustomerID) AS tblspchrecust LEFT JOIN DimStore ON tblspchrecust.StoreID=DimStore.StoreID) AS tblspcrcs LEFT JOIN DimDate ON tblspcrcs.Date=DimDate.FullDate;
