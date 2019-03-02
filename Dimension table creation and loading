@@ -1,0 +1,37 @@
+## Code used to delete, create and load dimension tables
+
+## Create dimension table which is executed only once
+## dimChannelKey is the surrogate key or primary key for this dimension table and other primary keys from source table are now natural keys
+CREATE TABLE sabaris3DW.dbo.DimChannel
+(dimChannelKey INT IDENTITY(1,1) CONSTRAINT PK_dimChannel PRIMARY KEY CLUSTERED NOT NULL,
+ChannelID INT NOT NULL,
+Channel NVARCHAR(50) NOT NULL,
+ChannelCategoryID INT NOT NULL,
+ChannelCategory NVARCHAR(50) NOT NULL
+);
+GO
+
+## Delete the table so that evrytime task is executed it will reload data without creating any duplicates
+## When any primary key is inserted it will start automatically from 1 after reloading data everytime -reseeding command ensures it starts from 1 after refresh
+## Inserting default values in dimension table will help to avoid null values when connecting fact tables to dimension tables
+
+IF EXISTS (SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = 'dbo' AND TABLE_NAME = 'DimChannel')
+BEGIN
+	DELETE FROM dbo.DimChannel;
+END
+GO
+
+DBCC CHECKIDENT ('dbo.DimChannel',RESEED, 0);
+GO
+
+INSERT INTO dbo.DimChannel
+(ChannelID,ChannelCategoryID,ChannelCategory,Channel)
+
+SELECT ChannelID,Channel.ChannelCategoryID,ChannelCategory,Channel FROM dbo.StageChannel AS Channel JOIN dbo.StageChannelCategory AS ChannelCategory ON Channel.ChannelCategoryID=ChannelCategory.ChannelCategoryID;
+
+SET IDENTITY_INSERT dbo.DimChannel ON;
+INSERT INTO dbo.DimChannel
+(dimChannelKey,ChannelID,ChannelCategoryID,ChannelCategory,Channel)
+VALUES(-1,0,0,'Unknown','Unknown');
+SET IDENTITY_INSERT dbo.dimChannel OFF;
+GO
