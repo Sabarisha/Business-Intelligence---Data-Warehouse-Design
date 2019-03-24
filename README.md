@@ -22,3 +22,4 @@ I need to analyze the sales history of the company and make recommendations to i
 * Dimension table creation and loading - Sample code explaining how to create and load data into a dimension table
 * Fact table creation and loading - Sample code explaining how to create and load data into a fact table
 * Additional Views for Sales and Product Analysis - Views to perform additional sales and product analysis for the data given. Views generally inssulate the datawarehouse data from BI tools like Tableau/ Power BI so that original data is not affected 
+* Final Presentation- Product Analytics.twbx- Customized Tableau dashboard used for answering business questions by performing sales and product analysis
