@@ -1,0 +1,107 @@
+##Creating Views and additional views to insulate the datawarehouse from BI tools such as Tableau / Power BI etc
+
+CREATE VIEW dbo.Product_SalesTargets_History AS
+SELECT FullDate,ProductCategory,ProductType,Product,DailySalesQuantityTarget,TotalQuantity,TotalSalesamount,TotalProfit 
+FROM(SELECT FactSales.DimDateID AS DimDateID,DimProduct.dimProductKey AS dimProductKey,ProductCategory,ProductType,Product,SUM(SalesQuantity) AS TotalQuantity,SUM(SalesAmount) AS TotalSalesamount,SUM(Profit) AS TotalProfit
+FROM FactSales
+LEFT JOIN DimProduct ON FactSales.dimProductKey=DimProduct.dimProductKey
+GROUP BY FactSales.DimDateID,DimProduct.dimProductKey,ProductCategory,ProductType,Product) AS t1
+LEFT JOIN FactProductTargets ON t1.DimDateID=FactProductTargets.DimDateID AND t1.dimProductKey=FactProductTargets.dimProductKey
+LEFT JOIN DimDate ON t1.DimDateID=DimDate.DimDateID
+WHERE ProductCategory='Women''s Apparel' OR ProductCategory='Accessories'
+GO
+
+-----QA1
+CREATE VIEW dbo.individualprodprofits AS
+SELECT Product,ProductType,ProductCategory,Color,Style,Weight,Cost,Price,WholeSalePrice FROM DimProduct
+JOIN (SELECT DISTINCT dimProductKey,Cost FROM FactSales) AS t1 ON DimProduct.dimProductKey=t1.dimProductKey
+GO
+
+-----QA2
+CREATE VIEW dbo.Productsalesquantityanalysis AS
+SELECT FullDate,ProductCategory,ProductType,Product,DailySalesQuantityTarget,TotalQuantity
+FROM(SELECT FactSales.DimDateID AS DimDateID,DimProduct.dimProductKey AS dimProductKey,ProductCategory,ProductType,Product,SUM(SalesQuantity) AS TotalQuantity
+FROM FactSales
+LEFT JOIN DimProduct ON FactSales.dimProductKey=DimProduct.dimProductKey
+GROUP BY FactSales.DimDateID,DimProduct.dimProductKey,ProductCategory,ProductType,Product) AS t1
+LEFT JOIN FactProductTargets ON t1.DimDateID=FactProductTargets.DimDateID AND t1.dimProductKey=FactProductTargets.dimProductKey
+LEFT JOIN DimDate ON t1.DimDateID=DimDate.DimDateID
+GO
+
+---QA3
+CREATE VIEW dbo.CRSSalesAmountanalysis AS
+SELECT FullDate,Channel,ResellerName,StoreName,TotalSalesAmount,DailyTargetSalesAmount
+FROM(SELECT DimDateID,dimChannelKey,dimResellerKey,dimStoreKey,SUM(SalesAmount) AS TotalSalesAmount
+FROM FactSales
+GROUP BY DimDateID,dimChannelKey,dimResellerKey,dimStoreKey) AS t1
+LEFT JOIN FactSalesTargets ON t1.dimChannelKey=FactSalesTargets.dimChannelKey AND t1.dimResellerKey=FactSalesTargets.dimResellerKey AND t1.dimStoreKey=FactSalesTargets.dimStoreKey AND t1.DimDateID=FactSalesTargets.DimDateID
+LEFT JOIN DimDate ON t1.DimDateID=DimDate.DimDateID
+LEFT JOIN DimChannel ON t1.dimChannelKey=DimChannel.dimChannelKey
+LEFT JOIN DimReseller ON t1.dimResellerKey=DimReseller.dimResellerKey
+LEFT JOIN DimStore ON t1.dimStoreKey=DimStore.dimStoreKey
+GO
+
+---QA4
+CREATE VIEW dbo.CRSProductprofitanalysis AS
+SELECT FullDate,Channel,ResellerName,StoreName,ProductCategory,ProductType,Product,TotalProfit
+FROM(SELECT DimDateID,dimChannelKey,dimResellerKey,dimStoreKey,dimProductKey,SUM(Profit) AS TotalProfit
+FROM FactSales
+GROUP BY DimDateID,dimChannelKey,dimResellerKey,dimStoreKey,dimProductKey) AS t1
+LEFT JOIN DimDate ON t1.DimDateID=DimDate.DimDateID
+LEFT JOIN DimChannel ON t1.dimChannelKey=DimChannel.dimChannelKey
+LEFT JOIN DimReseller ON t1.dimResellerKey=DimReseller.dimResellerKey
+LEFT JOIN DimStore ON t1.dimStoreKey=DimStore.dimStoreKey
+LEFT JOIN DimProduct ON t1.dimProductKey=DimProduct.dimProductKey
+GO
+
+
+--QA5
+CREATE VIEW dbo.CRSProductquantityanalysis AS
+SELECT FullDate,Channel,ResellerName,StoreName,ProductCategory,ProductType,Product,TotalSalesQuantity
+FROM(SELECT DimDateID,dimChannelKey,dimResellerKey,dimStoreKey,dimProductKey,SUM(SalesQuantity) AS TotalSalesQuantity
+FROM FactSales
+GROUP BY DimDateID,dimChannelKey,dimResellerKey,dimStoreKey,dimProductKey) AS t1
+LEFT JOIN DimDate ON t1.DimDateID=DimDate.DimDateID
+LEFT JOIN DimChannel ON t1.dimChannelKey=DimChannel.dimChannelKey
+LEFT JOIN DimReseller ON t1.dimResellerKey=DimReseller.dimResellerKey
+LEFT JOIN DimStore ON t1.dimStoreKey=DimStore.dimStoreKey
+LEFT JOIN DimProduct ON t1.dimProductKey=DimProduct.dimProductKey
+GO
+
+
+
+CREATE VIEW dbo.sales_fact AS
+SELECT FactSalesKey,dimProductKey,dimChannelKey,dimCustomerKey,dimStoreKey,dimResellerKey,DimDateID,SalesDetailID,SalesHeaderID,Cost,SalesQuantity,SalesAmount,Profit FROM dbo.FactSales
+GO
+
+CREATE VIEW dbo.SalesTargets_fact AS
+SELECT FactSalesTargetsKey,DimDateID,dimResellerKey,dimStoreKey,dimChannelKey,DailyTargetSalesAmount FROM dbo.FactSalesTargets
+GO
+
+CREATE VIEW dbo.ProductTargets_fact AS
+SELECT FactProductTargetsKey,dimProductKey,DimDateID,DailySalesQuantityTarget FROM dbo.FactProductTargets
+GO
+
+CREATE VIEW dbo.ChannelDetails AS
+SELECT dimChannelKey,ChannelID,Channel,ChannelCategoryID,ChannelCategory FROM dbo.DimChannel
+GO
+
+CREATE VIEW dbo.CustomerDetails AS
+SELECT dimCustomerKey,CustomerID,FirstName,LastName,Gender,EmailAddress,Address,City,StateProvince,Country,PostalCode,PhoneNumber FROM dbo.DimCustomer
+GO
+
+CREATE VIEW dbo.DateHistory AS
+SELECT DimDateID,FullDate,DayNumberOfWeek,DayNameOfWeek ,DayNumberOfMonth,DayNumberOfYear,WeekdayFlag,WeekNumberOfYear,[MonthName],MonthNumberOfYear,CalendarQuarter,CalendarYear,CalendarSemester,CreatedDate,CreatedBy,ModifiedDate,ModifiedBy FROM dbo.DimDate
+GO
+
+CREATE VIEW dbo.ProductDetails AS
+SELECT dimProductKey,ProductID,Product,ProductTypeID,ProductType,ProductCategoryID,ProductCategory,Color,Style,Weight FROM dbo.DimProduct
+GO
+
+CREATE VIEW dbo.ResellerDetails AS
+SELECT dimResellerKey,ResellerID,ResellerName,Contact,EmailAddress,Address,City,StateProvince,Country,PostalCode,PhoneNumber FROM dbo.DimReseller
+GO
+
+CREATE VIEW dbo.StoreDetails AS
+SELECT dimStoreKey,StoreID,StoreNumber,StoreManager,Address,City,StateProvince,Country,PostalCode,PhoneNumber FROM dbo.DimStore
+GO
