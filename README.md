@@ -21,3 +21,4 @@ I need to analyze the sales history of the company and make recommendations to i
 * Staging Loads.docx - an overview of how to stage loads in SSIS from source to target database
 * Dimension table creation and loading - Sample code explaining how to create and load data into a dimension table
 * Fact table creation and loading - Sample code explaining how to create and load data into a fact table
+* Additional Views for Sales and Product Analysis - Views to perform additional sales and product analysis for the data given. Views generally inssulate the datawarehouse data from BI tools like Tableau/ Power BI so that original data is not affected 
